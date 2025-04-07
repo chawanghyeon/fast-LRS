@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: benchmark
+      POSTGRES_USER: benchmark
+      POSTGRES_PASSWORD: benchmark
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  fastapi:
+    build: ./fastapi
+    depends_on:
+      - postgres
+    ports:
+      - "8001:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  go:
+    build: ./go
+    depends_on:
+      - postgres
+    ports:
+      - "8002:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  node:
+    build: ./node
+    depends_on:
+      - postgres
+    ports:
+      - "8003:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  k6:
+    build: ./k6
+    depends_on:
+      - fastapi
+      - go
+      - node
+    stdin_open: true
+    tty: true
